@@ -4,13 +4,14 @@ dataset:
   target: rul
 
 split:
-  strategy: unit_based
-  test_fraction: 0.2
-  random_seed: 42
+  strategy: official_train_test_plus_internal_validation
+  validation_fraction: 0.2
+  validation_random_seed: 42
+  test_set: official_cmapss_test
 
 preprocessing:
   scaler: standard
-  fit_on: train_only
+  fit_on: training_only
 
 window:
   size: 20
