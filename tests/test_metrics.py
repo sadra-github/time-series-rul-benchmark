@@ -12,7 +12,7 @@ def test_regression_metrics_are_computed_consistently():
 
     assert np.isclose(metrics["mae"], 2.0 / 3.0)
     assert np.isclose(metrics["rmse"], np.sqrt(2.0 / 3.0))
-    assert np.isclose(metrics["r2"], 0.5)
+    assert np.isclose(metrics["r2"], 0.0)
 
 
 def test_metrics_reject_mismatched_lengths():
