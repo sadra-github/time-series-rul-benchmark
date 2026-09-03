@@ -1,4 +1,4 @@
-"""Data loading utilities for the NASA C-MAPSS benchmark."""
+"""Data loading and temporal validation utilities for C-MAPSS."""
 
 from pathlib import Path
 from typing import Iterable
@@ -17,32 +17,12 @@ COLUMNS = [
 
 
 def load_cmapss_txt(path: str | Path) -> pd.DataFrame:
-    """Load a whitespace-delimited C-MAPSS FD001-style file.
-
-    Parameters
-    ----------
-    path:
-        Path to a C-MAPSS text file such as train_FD001.txt or test_FD001.txt.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Data with normalized column names and rows containing only the
-        expected 26 fields.
-    """
+    """Load a whitespace-delimited C-MAPSS FD001-style file."""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Dataset file not found: {path}")
 
-    df = pd.read_csv(
-        path,
-        sep=r"\s+",
-        header=None,
-        engine="python",
-    )
-
-    # C-MAPSS text files can contain trailing whitespace-separated empty
-    # fields after the 26 meaningful columns. Remove only fully empty columns.
+    df = pd.read_csv(path, sep=r"\s+", header=None, engine="python")
     df = df.dropna(axis=1, how="all")
 
     if df.shape[1] != len(COLUMNS):
@@ -58,7 +38,7 @@ def validate_cmapss_schema(
     df: pd.DataFrame,
     required_columns: Iterable[str] | None = None,
 ) -> None:
-    """Validate the structural assumptions required by the benchmark."""
+    """Validate structural assumptions required by the benchmark."""
     required = list(required_columns or COLUMNS)
     missing = [column for column in required if column not in df.columns]
     if missing:
@@ -66,25 +46,29 @@ def validate_cmapss_schema(
 
     if df.empty:
         raise ValueError("The dataset is empty.")
-
     if df["unit_id"].isna().any() or df["cycle"].isna().any():
         raise ValueError("unit_id and cycle must not contain missing values.")
-
     if not pd.api.types.is_numeric_dtype(df["unit_id"]):
         raise TypeError("unit_id must be numeric.")
-
     if not pd.api.types.is_numeric_dtype(df["cycle"]):
         raise TypeError("cycle must be numeric.")
-
     if (df["cycle"] < 1).any():
         raise ValueError("cycle values must be positive.")
 
 
 def validate_temporal_order(df: pd.DataFrame) -> None:
-    """Check that cycle indices are strictly increasing within each unit."""
-    ordered = df.sort_values(["unit_id", "cycle"])
-    cycle_diff = ordered.groupby("unit_id")["cycle"].diff()
+    """Check that input rows are chronologically ordered within each unit.
 
+    Unlike window construction, this validator intentionally does not sort the
+    dataframe first. It therefore detects an input ordering violation rather
+    than merely checking whether the cycles can be sorted into a valid order.
+    """
+    required = {"unit_id", "cycle"}
+    missing = sorted(required.difference(df.columns))
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    cycle_diff = df.groupby("unit_id", sort=False)["cycle"].diff()
     if (cycle_diff.dropna() <= 0).any():
         raise ValueError(
             "Cycle indices must be strictly increasing within each unit."
