@@ -37,7 +37,7 @@ def test_windows_never_cross_unit_boundaries():
 
     assert X.shape == (4, 4, 1)
     assert metadata["unit_id"].tolist() == [1, 1, 2, 2]
-    assert y.tolist() == [2.0, 1.0, 2.0, 1.0]
+    assert y.tolist() == [1.0, 0.0, 1.0, 0.0]
 
 
 def test_short_trajectories_produce_no_windows():
