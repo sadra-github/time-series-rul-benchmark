@@ -1,0 +1,27 @@
+dataset:
+  name: NASA C-MAPSS
+  subset: FD001
+  target: rul
+
+split:
+  strategy: unit_based
+  test_fraction: 0.2
+  random_seed: 42
+
+preprocessing:
+  scaler: standard
+  fit_on: train_only
+
+window:
+  size: 20
+  stride: 1
+  target_alignment: last_timestep
+
+evaluation:
+  metrics:
+    - mae
+    - rmse
+    - r2
+
+reproducibility:
+  seed: 42
