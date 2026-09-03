@@ -1,4 +1,4 @@
-"""End-to-end baseline pipeline for the C-MAPSS RUL benchmark."""
+"""End-to-end baseline pipeline for C-MAPSS development experiments."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data.cmapss_protocol import load_cmapss_fd001_protocol
+from src.data.loader import load_cmapss_txt, validate_cmapss_schema, validate_temporal_order
 from src.data.rul import add_training_rul
 from src.data.validation import split_train_validation
 from src.preprocessing.scaling import TrainingOnlyScaler
@@ -30,9 +30,12 @@ def prepare_development_data(
     window_size: int = 20,
     stride: int = 1,
 ) -> tuple[tuple, tuple]:
-    """Prepare training and validation windows without touching official test data."""
-    train_df, _ = load_cmapss_fd001_protocol(train_path, train_path)
+    """Prepare training and validation windows from train_FD001 only."""
+    train_df = load_cmapss_txt(train_path)
+    validate_cmapss_schema(train_df)
+    validate_temporal_order(train_df)
     train_df = add_training_rul(train_df)
+
     train_part, validation_part = split_train_validation(
         train_df,
         validation_fraction=validation_fraction,
@@ -66,7 +69,7 @@ def run_baselines(
     window_size: int = 20,
     stride: int = 1,
 ) -> pd.DataFrame:
-    """Train the initial baselines and return a common metric table."""
+    """Train initial baselines and return a common validation metric table."""
     train_windows, validation_windows = prepare_development_data(
         train_path,
         validation_fraction=validation_fraction,
