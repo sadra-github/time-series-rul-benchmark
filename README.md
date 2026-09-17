@@ -18,79 +18,105 @@ How does temporal representation affect the performance and generalization of ma
 
 This project uses the publicly available NASA C-MAPSS dataset, initially restricted to the FD001 subset.
 
-Raw dataset files are not included in this repository. Dataset acquisition and expected file structure will be documented separately.
+Raw dataset files are not included in this repository. The expected inputs are `train_FD001.txt`, `test_FD001.txt`, and `RUL_FD001.txt`.
 
 ## Methodology
 
-The planned workflow is:
+The current implementation follows this workflow:
 
 ```text
-Raw multivariate time series
-        |
-        v
-Temporal preprocessing
-        |
-        v
-Leakage-aware window construction
-        |
-        +----------------------+
-        |                      |
-        v                      v
- Engineered representation   Sequence representation
-        |                      |
-        v                      v
- Classical ML              Neural models
-        |                      |
-        +----------+-----------+
+C-MAPSS FD001
+      |
+      v
+Schema and temporal validation
+      |
+      v
+Training-only preprocessing
+      |
+      v
+Fixed temporal windows
+      |
+      +--------------------------+
+      |                          |
+      v                          v
+Development validation      Official test
+      |                          |
+      v                          v
+Baseline comparison        Final evaluation
+      |                          |
+      +------------+-------------+
                    |
                    v
-             RUL prediction
-                   |
-                   v
-          Evaluation and analysis
+          Error and generalization analysis
 ```
 
-## Models
+## Current Models
 
-The initial benchmark includes:
+The implemented baseline set is:
 
-- Naive baseline
-- Linear Regression
-- Random Forest
-- Gradient Boosting
-- Multilayer Perceptron (MLP)
-- Long Short-Term Memory (LSTM)
+- Mean RUL baseline
+- Linear Regression on flattened temporal windows
+- Random Forest on flattened temporal windows
+- Last-value diagnostic baseline
 
-Additional models will only be introduced when justified by the experimental design.
+The last-value model is retained only as a diagnostic reference because the last value of an arbitrary sensor is not intrinsically an RUL estimate.
+
+Neural models are not added until the data, temporal-window, and evaluation pipeline has been validated with simple baselines.
 
 ## Experimental Protocol
 
-The benchmark is designed to preserve temporal structure throughout the experiment.
+The benchmark preserves temporal structure throughout the experiment.
 
 Key controls include:
 
-- Unit-aware train/test separation.
-- Chronological ordering of observations.
-- No use of future observations when constructing past inputs.
-- Fitting preprocessing operations using training data only.
-- Fixed and explicitly recorded random seeds.
-- Consistent evaluation procedures across model families.
+- Unit-level development train/validation separation.
+- Separate use of the official C-MAPSS test partition for final evaluation.
+- Chronological ordering within each unit.
+- No future observations in an input window.
+- Preprocessing fitted on training data only.
+- Explicit window size and stride.
+- Common evaluation metrics across model families.
+- Fixed random seeds where stochastic components are used.
+
+The C-MAPSS train and test files use local unit identifiers. Therefore, equal numeric unit IDs in the two files do not represent shared trajectories.
+
+## Temporal Window Comparison
+
+Window-size experiments are performed on the development validation partition. The official test set is not used to select a window size. This prevents the final test result from becoming part of model or protocol selection.
+
+The comparison utility is available through `scripts/compare_windows.py`.
 
 ## Evaluation
 
-The initial metrics are:
+The primary metrics are:
 
 - Mean Absolute Error (MAE)
 - Root Mean Squared Error (RMSE)
 - R-squared (R²)
 
-Additional prognostics-specific metrics may be included when their use is methodologically justified.
+The evaluation layer validates array shape, sample counts, and finite values before calculating metrics.
+
+Unit-level evaluation is also available for examining variation across previously unseen test trajectories.
+
+## Running the Benchmark
+
+After downloading the official C-MAPSS FD001 files, run the final baseline benchmark from the repository root:
+
+```text
+python scripts/run_benchmark.py --train path/to/train_FD001.txt --test path/to/test_FD001.txt --rul path/to/RUL_FD001.txt --window-size 20 --output results/fd001_baselines.csv
+```
+
+To compare temporal window sizes without using the official test set:
+
+```text
+python scripts/compare_windows.py --train path/to/train_FD001.txt --windows 5 10 20 30 --output results/window_comparison.csv
+```
 
 ## Reproducibility
 
-Experiments will be controlled through explicit configurations covering preprocessing, temporal windows, model settings, random seeds, and evaluation procedures.
+The benchmark configuration records the dataset subset, split strategy, preprocessing rule, temporal window definition, evaluation metrics, and seed. Model parameters are explicit in the model constructors.
 
-The repository is intended to support repeatable experiments rather than a single model demonstration.
+The repository includes automated tests for data validation, RUL construction, temporal windows, scaling, models, evaluation, and the end-to-end benchmark pipeline.
 
 ## Project Structure
 
@@ -98,26 +124,27 @@ The repository is intended to support repeatable experiments rather than a singl
 .
 ├── data/
 ├── configs/
-├── notebooks/
+├── docs/
+├── scripts/
 ├── src/
 │   ├── data/
 │   ├── preprocessing/
-│   ├── features/
 │   ├── models/
-│   └── evaluation/
-├── tests/
-├── results/
-└── docs/
+│   ├── evaluation/
+│   └── experiments/
+└── tests/
 ```
 
-## Limitations
+## Documentation
 
-The initial scope is limited to NASA C-MAPSS FD001 and the model families defined above. Broader datasets and additional architectures may be considered in future versions.
+- `docs/benchmark_protocol.md`: data, labels, preprocessing, temporal windows, models, and evaluation protocol.
+- `docs/generalization.md`: unit-level generalization analysis.
+- `configs/benchmark.yaml`: experiment configuration.
 
-## License
+## Scope and Limitations
 
-A license will be selected before the first public release of the complete implementation.
+Version 1 is limited to NASA C-MAPSS FD001. The benchmark currently focuses on controlled classical baselines and temporal representation. Neural architectures, broader datasets, and additional prognostics metrics are reserved for later experimental stages.
 
 ## Status
 
-Project initialization. The experimental specification and implementation are being developed incrementally.
+The leakage-aware data pipeline, temporal preprocessing, baseline models, evaluation layer, official FD001 benchmark runner, and validation-only temporal-window comparison are implemented. Results are generated locally from the user's copy of the public C-MAPSS dataset.
