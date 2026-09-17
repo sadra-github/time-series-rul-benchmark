@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from src.data.loader import validate_finite_values, validate_temporal_order
+
 
 def make_sequence_windows(
     df: pd.DataFrame,
@@ -15,8 +17,10 @@ def make_sequence_windows(
 ) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
     """Construct fixed-length windows independently within each unit.
 
-    Windows never cross unit boundaries and each target is aligned with the
-    final observation in its corresponding input window.
+    Windows follow the supplied temporal order and never cross unit
+    boundaries. Each target is aligned with the final observation in its
+    corresponding input window. Cycle gaps are retained in metadata rather
+    than treated as missing observations.
     """
     if window_size < 1:
         raise ValueError("window_size must be positive.")
@@ -31,14 +35,14 @@ def make_sequence_windows(
     if df.empty:
         raise ValueError("Cannot construct windows from an empty dataframe.")
 
+    validate_temporal_order(df)
+    validate_finite_values(df, [*feature_columns, target_column])
+
     X_windows: list[np.ndarray] = []
     y_values: list[float] = []
     metadata: list[dict[str, int | float]] = []
 
-    ordered = df.sort_values(["unit_id", "cycle"])
-
-    for unit_id, unit_df in ordered.groupby("unit_id", sort=False):
-        unit_df = unit_df.sort_values("cycle")
+    for unit_id, unit_df in df.groupby("unit_id", sort=False):
         features = unit_df[feature_columns].to_numpy(dtype=float)
         targets = unit_df[target_column].to_numpy(dtype=float)
         cycles = unit_df["cycle"].to_numpy()
@@ -48,13 +52,19 @@ def make_sequence_windows(
 
         for start in range(0, len(unit_df) - window_size + 1, stride):
             end = start + window_size
+            window_cycles = cycles[start:end]
+            cycle_diffs = np.diff(window_cycles)
             X_windows.append(features[start:end])
             y_values.append(targets[end - 1])
             metadata.append(
                 {
                     "unit_id": unit_id,
-                    "start_cycle": cycles[start],
-                    "end_cycle": cycles[end - 1],
+                    "start_cycle": window_cycles[0],
+                    "end_cycle": window_cycles[-1],
+                    "cycle_span": window_cycles[-1] - window_cycles[0],
+                    "max_cycle_gap": (
+                        float(cycle_diffs.max()) if len(cycle_diffs) else 0.0
+                    ),
                 }
             )
 
