@@ -1,0 +1,6 @@
+window_size,stride,train_units,validation_units,train_windows,validation_windows,train_mean_cycle_span,validation_mean_cycle_span,train_max_cycle_gap,validation_max_cycle_gap
+5,1,80,20,16241,3990,4.0,4.0,1.0,1.0
+10,1,80,20,15841,3890,9.0,9.0,1.0,1.0
+20,1,80,20,15041,3690,19.0,19.0,1.0,1.0
+30,1,80,20,14241,3490,29.0,29.0,1.0,1.0
+50,1,80,20,12641,3090,49.0,49.0,1.0,1.0
