@@ -1,7 +1,25 @@
 import numpy as np
 import pytest
 
-from src.models.baseline import LastValueBaseline, LinearRULBaseline
+from src.models.baseline import LastValueBaseline, LinearRULBaseline, MeanRULBaseline
+
+
+def test_mean_rul_baseline_uses_training_target_mean():
+    X_train = np.ones((3, 2, 1))
+    y_train = np.array([10.0, 20.0, 30.0])
+    X_test = np.ones((2, 2, 1))
+
+    model = MeanRULBaseline().fit(X_train, y_train)
+
+    np.testing.assert_array_equal(model.predict(X_test), [20.0, 20.0])
+
+
+def test_mean_rul_baseline_rejects_empty_training_data():
+    X = np.empty((0, 2, 1))
+    y = np.empty(0)
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        MeanRULBaseline().fit(X, y)
 
 
 def test_last_value_baseline_uses_final_timestep_and_feature():
@@ -38,6 +56,9 @@ def test_linear_baseline_fits_and_predicts():
 def test_baselines_reject_invalid_shape():
     X = np.ones((4, 2))
     y = np.ones(4)
+
+    with pytest.raises(ValueError, match="shape"):
+        MeanRULBaseline().fit(X, y)
 
     with pytest.raises(ValueError, match="shape"):
         LastValueBaseline().fit(X, y)
