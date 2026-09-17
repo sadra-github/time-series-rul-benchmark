@@ -18,6 +18,21 @@ window:
   stride: 1
   target_alignment: last_timestep
 
+models:
+  development:
+    - mean_rul
+    - linear_regression
+    - random_forest
+    - last_value_diagnostic
+  official_test:
+    - mean_rul
+    - linear_regression
+    - random_forest
+
+selection:
+  temporal_window_comparison: validation_only
+  official_test_used_for_selection: false
+
 evaluation:
   metrics:
     - mae
