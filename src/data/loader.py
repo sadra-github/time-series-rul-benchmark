@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Iterable
 
+import numpy as np
 import pandas as pd
 
 
@@ -54,6 +55,25 @@ def validate_cmapss_schema(
         raise TypeError("cycle must be numeric.")
     if (df["cycle"] < 1).any():
         raise ValueError("cycle values must be positive.")
+
+
+def validate_finite_values(
+    df: pd.DataFrame,
+    columns: Iterable[str] | None = None,
+) -> None:
+    """Reject missing or infinite values in the selected numeric columns."""
+    selected = list(columns or COLUMNS)
+    missing = [column for column in selected if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    values = df[selected]
+    non_numeric = [column for column in selected if not pd.api.types.is_numeric_dtype(values[column])]
+    if non_numeric:
+        raise TypeError(f"Columns must be numeric: {non_numeric}")
+
+    if not np.isfinite(values.to_numpy(dtype=float)).all():
+        raise ValueError("Selected columns must contain only finite values.")
 
 
 def validate_temporal_order(df: pd.DataFrame) -> None:
