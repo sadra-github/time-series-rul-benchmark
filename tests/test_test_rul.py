@@ -1,7 +1,11 @@
 import pandas as pd
 import pytest
 
-from src.data.test_rul import add_test_rul, load_cmapss_rul
+from src.data.test_rul import (
+    add_test_rul,
+    load_cmapss_rul,
+    validate_test_rul_alignment,
+)
 
 
 def test_load_cmapss_rul(tmp_path):
@@ -33,14 +37,12 @@ def test_add_test_rul_reconstructs_labels():
 
 
 def test_add_test_rul_requires_all_units():
-    test_df = pd.DataFrame(
-        {"unit_id": [1, 2], "cycle": [5, 5]}
-    )
+    test_df = pd.DataFrame({"unit_id": [1, 2], "cycle": [5, 5]})
     terminal_rul = pd.Series(
         [5], index=pd.Index([1], name="unit_id"), name="terminal_rul"
     )
 
-    with pytest.raises(ValueError, match="Missing terminal RUL"):
+    with pytest.raises(ValueError, match="missing terminal RUL"):
         add_test_rul(test_df, terminal_rul)
 
 
@@ -50,3 +52,23 @@ def test_load_cmapss_rul_rejects_negative_values(tmp_path):
 
     with pytest.raises(ValueError, match="non-negative"):
         load_cmapss_rul(path)
+
+
+def test_test_rul_alignment_rejects_extra_unit():
+    test_df = pd.DataFrame({"unit_id": [1, 2], "cycle": [5, 5]})
+    terminal_rul = pd.Series(
+        [5, 10, 15], index=pd.Index([1, 2, 3], name="unit_id")
+    )
+
+    with pytest.raises(ValueError, match="non-test units"):
+        validate_test_rul_alignment(test_df, terminal_rul)
+
+
+def test_test_rul_alignment_rejects_duplicate_unit_ids():
+    test_df = pd.DataFrame({"unit_id": [1, 2], "cycle": [5, 5]})
+    terminal_rul = pd.Series(
+        [5, 10], index=pd.Index([1, 1], name="unit_id")
+    )
+
+    with pytest.raises(ValueError, match="unique"):
+        validate_test_rul_alignment(test_df, terminal_rul)
