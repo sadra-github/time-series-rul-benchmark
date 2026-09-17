@@ -6,12 +6,36 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 
+class MeanRULBaseline:
+    """Predict the mean training RUL for every sample."""
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "MeanRULBaseline":
+        """Store the mean RUL computed from the training targets."""
+        if X.ndim != 3:
+            raise ValueError("X must have shape (samples, timesteps, features).")
+        if len(X) != len(y):
+            raise ValueError("X and y must contain the same number of samples.")
+        if len(y) == 0:
+            raise ValueError("Training data must not be empty.")
+        self._mean_rul = float(np.mean(y))
+        self._fitted = True
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Return the training-set mean RUL for every sample."""
+        if not getattr(self, "_fitted", False):
+            raise RuntimeError("Baseline must be fitted before prediction.")
+        if X.ndim != 3:
+            raise ValueError("X must have shape (samples, timesteps, features).")
+        return np.full(len(X), self._mean_rul, dtype=float)
+
+
 class LastValueBaseline:
     """Predict the target using the last observed feature value.
 
-    This baseline is intentionally generic: it uses the final feature in each
-    flattened window and therefore provides a simple reference point before
-    introducing learned nonlinear models.
+    This baseline is retained as a diagnostic reference. It is not the primary
+    naive RUL baseline because the last feature is not intrinsically an RUL
+    quantity.
     """
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "LastValueBaseline":
