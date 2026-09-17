@@ -15,8 +15,9 @@ def load_cmapss_fd001_protocol(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load and validate the official FD001 train/test partitions.
 
-    The supplied C-MAPSS training and test files remain separate. This helper
-    does not merge, resplit, or fit any preprocessing operation across them.
+    C-MAPSS train and test files use local unit identifiers. Therefore matching
+    numeric unit IDs across the two files do not indicate leakage. The files
+    remain separate and are never merged or resplit by this helper.
     """
     train = load_cmapss_txt(train_path)
     test = load_cmapss_txt(test_path)
@@ -26,8 +27,5 @@ def load_cmapss_fd001_protocol(
         validate_temporal_order(frame)
         if name == "train" and frame["unit_id"].nunique() < 2:
             raise ValueError("The training partition must contain multiple units.")
-
-    if set(train["unit_id"]).intersection(test["unit_id"]):
-        raise ValueError("Train and test unit identifiers must be disjoint.")
 
     return train, test
