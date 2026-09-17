@@ -1,7 +1,13 @@
+import numpy as np
 import pandas as pd
 import pytest
 
-from src.data.loader import COLUMNS, validate_cmapss_schema, validate_temporal_order
+from src.data.loader import (
+    COLUMNS,
+    validate_cmapss_schema,
+    validate_finite_values,
+    validate_temporal_order,
+)
 from src.data.rul import add_training_rul
 
 
@@ -32,6 +38,15 @@ def test_temporal_order_rejects_duplicate_cycle():
 
     with pytest.raises(ValueError, match="strictly increasing"):
         validate_temporal_order(df)
+
+
+def test_finite_validation_rejects_nan_and_infinite_values():
+    for bad_value in [np.nan, np.inf, -np.inf]:
+        df = make_sample()
+        df.loc[0, "sensor_1"] = bad_value
+
+        with pytest.raises(ValueError, match="finite values"):
+            validate_finite_values(df, ["sensor_1"])
 
 
 def test_training_rul_is_zero_at_terminal_cycle():
