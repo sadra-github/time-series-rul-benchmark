@@ -7,7 +7,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
 def evaluate_regression(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
-    """Compute the benchmark's core regression metrics."""
+    """Compute MAE, RMSE, and R2 after validating prediction arrays."""
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
 
@@ -15,8 +15,8 @@ def evaluate_regression(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, flo
         raise ValueError("y_true and y_pred must be one-dimensional arrays.")
     if len(y_true) != len(y_pred):
         raise ValueError("y_true and y_pred must have the same length.")
-    if len(y_true) == 0:
-        raise ValueError("Cannot evaluate empty arrays.")
+    if len(y_true) < 2:
+        raise ValueError("At least two samples are required for evaluation.")
     if not np.isfinite(y_true).all() or not np.isfinite(y_pred).all():
         raise ValueError("y_true and y_pred must contain only finite values.")
 
