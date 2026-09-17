@@ -28,6 +28,8 @@ def test_windows_have_expected_shape_and_target_alignment():
     assert y.tolist() == [2.0, 1.0, 0.0, 2.0, 1.0, 0.0]
     assert metadata["start_cycle"].tolist() == [1, 2, 3, 1, 2, 3]
     assert metadata["end_cycle"].tolist() == [3, 4, 5, 3, 4, 5]
+    assert metadata["cycle_span"].tolist() == [2, 2, 2, 2, 2, 2]
+    assert metadata["max_cycle_gap"].tolist() == [1.0] * 6
 
 
 def test_windows_never_cross_unit_boundaries():
@@ -38,6 +40,40 @@ def test_windows_never_cross_unit_boundaries():
     assert X.shape == (4, 4, 1)
     assert metadata["unit_id"].tolist() == [1, 1, 2, 2]
     assert y.tolist() == [1.0, 0.0, 1.0, 0.0]
+
+
+def test_cycle_gaps_are_retained_in_metadata():
+    df = pd.DataFrame(
+        {
+            "unit_id": [1, 1, 1, 1],
+            "cycle": [1, 2, 4, 5],
+            "sensor_1": [1.0, 2.0, 4.0, 5.0],
+            "rul": [4.0, 3.0, 1.0, 0.0],
+        }
+    )
+
+    X, y, metadata = make_sequence_windows(df, ["sensor_1"], window_size=3)
+
+    assert X.shape == (2, 3, 1)
+    assert y.tolist() == [1.0, 0.0]
+    assert metadata["cycle_span"].tolist() == [3, 3]
+    assert metadata["max_cycle_gap"].tolist() == [2.0, 2.0]
+
+
+def test_windows_reject_input_with_non_increasing_cycles():
+    df = make_sample()
+    df.loc[2, "cycle"] = 2
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        make_sequence_windows(df, ["sensor_1"], window_size=3)
+
+
+def test_windows_reject_non_finite_values():
+    df = make_sample()
+    df.loc[0, "sensor_1"] = float("nan")
+
+    with pytest.raises(ValueError, match="finite values"):
+        make_sequence_windows(df, ["sensor_1"], window_size=3)
 
 
 def test_short_trajectories_produce_no_windows():
