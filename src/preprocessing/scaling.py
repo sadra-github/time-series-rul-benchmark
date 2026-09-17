@@ -19,7 +19,7 @@ class TrainingOnlyScaler:
     def fit(self, train: pd.DataFrame) -> "TrainingOnlyScaler":
         """Fit scaling parameters using training data only."""
         self._validate_columns(train)
-        self._scaler.fit(train[self.feature_columns])
+        self._scaler.fit(train[self.feature_columns].astype(float))
         self._fitted = True
         return self
 
@@ -29,10 +29,14 @@ class TrainingOnlyScaler:
             raise RuntimeError("Scaler must be fitted on training data first.")
 
         self._validate_columns(df)
+
         result = df.copy()
-        result.loc[:, self.feature_columns] = self._scaler.transform(
-            df[self.feature_columns]
+        feature_values = df[self.feature_columns].astype(float)
+
+        result[self.feature_columns] = self._scaler.transform(
+            feature_values
         )
+
         return result
 
     def fit_transform(self, train: pd.DataFrame) -> pd.DataFrame:

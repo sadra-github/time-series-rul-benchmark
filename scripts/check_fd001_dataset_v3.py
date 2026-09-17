@@ -7,9 +7,11 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from src.data.loader import load_cmapss_txt
-from src.data.validation import validate_cmapss_schema, validate_temporal_order
-
+from src.data.loader import (
+    load_cmapss_txt,
+    validate_cmapss_schema,
+    validate_temporal_order,
+)
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run structural and temporal QC on C-MAPSS FD001.")
